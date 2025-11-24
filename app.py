@@ -26,6 +26,19 @@ body, .stMarkdown, .stDataFrame, .stTable {
 section[data-testid="stSidebar"] * {
     font-size: 14px;
 }
+
+/* 표 모든 셀 가운데 정렬 */
+table td, table th {
+    text-align: center !important;
+}
+
+/* 데이터프레임의 내부 테이블도 강제 정렬 */
+[data-testid="stDataFrame"] div div table td {
+    text-align: center !important;
+}
+[data-testid="stDataFrame"] div div table th {
+    text-align: center !important;
+}
 </style>
 """
 
@@ -187,7 +200,17 @@ def main():
 
         # 튜플 리스트 → DataFrame
         df_result = pd.DataFrame(results, columns=["요일", "상대 선생님", "교시"])
+        weekday_order = ["월요일", "화요일", "수요일", "목요일", "금요일"]
+
+        df_result["요일"] = pd.Categorical(
+            df_result["요일"],
+            categories=weekday_order,
+            ordered=True
+        )
+
+        # 요일 → 교시 → 상대 선생님 순으로 다시 정렬
         df_result = df_result.sort_values(["요일", "교시", "상대 선생님"]).reset_index(drop=True)
+
 
         total_cnt = len(df_result)
 
