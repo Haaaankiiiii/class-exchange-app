@@ -233,7 +233,7 @@ def main():
         with tab1:
             st.markdown("#### 📋 상세 표")
             st.caption("요일-교시-선생님 순으로 정렬된 전체 교체 가능 시간입니다.")
-            st.dataframe(
+            st.table(
                 df_result,
                 use_container_width=True,
                 height=350,   # 표 높이 제한
@@ -275,7 +275,7 @@ def main():
                 .sort_values("상대 선생님")
             )
 
-            st.dataframe(
+            st.table(
                 df_teacher,
                 use_container_width=True,
                 height=350,
