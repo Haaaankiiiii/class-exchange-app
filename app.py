@@ -234,9 +234,7 @@ def main():
             st.markdown("#### 📋 상세 표")
             st.caption("요일-교시-선생님 순으로 정렬된 전체 교체 가능 시간입니다.")
             st.table(
-                df_result,
-                use_container_width=True,
-                height=350,   # 표 높이 제한
+                df_result
             )
 
         # =======================
@@ -276,9 +274,7 @@ def main():
             )
 
             st.table(
-                df_teacher,
-                use_container_width=True,
-                height=350,
+                df_teacher
             )
 
             st.markdown("### 📌 텍스트로도 보기")
