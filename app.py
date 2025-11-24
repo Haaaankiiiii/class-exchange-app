@@ -1,9 +1,37 @@
 import csv
 import streamlit as st
+import pandas as pd
 
-# -----------------------------
+# =====================================
+# 0. 간단 스타일(CSS) 적용
+# =====================================
+CUSTOM_CSS = """
+<style>
+/* 전체 글자 크기 조금 줄이기 */
+body, .stMarkdown, .stDataFrame, .stTable {
+    font-size: 14px;
+}
+
+/* 표 헤더 진하게 */
+.dataframe thead tr th {
+    font-weight: 600;
+}
+
+/* 줄무늬 표 */
+.dataframe tbody tr:nth-child(odd) {
+    background-color: #f9fafb;
+}
+
+/* 사이드바 글자 크기 */
+section[data-testid="stSidebar"] * {
+    font-size: 14px;
+}
+</style>
+"""
+
+# =====================================
 # 1. 데이터 불러오기
-# -----------------------------
+# =====================================
 @st.cache_data
 def load_timetable(csv_filename: str):
     try:
@@ -26,7 +54,7 @@ def find_exchange_slots(
     selected_class: str,
 ):
     """
-    기존 Tkinter 코드의 conclude() 로직을 그대로 옮긴 함수.
+    기존 Tkinter 코드 conclude() 로직을 그대로 옮긴 함수.
     교체 가능한 (요일, 상대 선생님 이름, 교시) 리스트를 리턴.
     """
     if data is None:
@@ -37,7 +65,7 @@ def find_exchange_slots(
     column = [row[0] for row in data]
 
     # --- 선택한 선생님의 행 index 찾기 ---
-    name_index = None
+    name_index = None    # <- None으로 초기화 해야 안전
     for i in range(len(column)):
         if teacher_name == column[i]:
             name_index = i
@@ -99,11 +127,12 @@ def find_exchange_slots(
     return results
 
 
-# -----------------------------
+# =====================================
 # 2. Streamlit UI
-# -----------------------------
+# =====================================
 def main():
     st.set_page_config(page_title="수업 교체 가능 시간표", layout="wide")
+    st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
     st.title("📚 수업 교체 가능 시간 조회")
     st.caption("CSV 시간표를 기반으로 교체 가능한 선생님과 교시를 찾아줍니다.")
@@ -115,7 +144,7 @@ def main():
     if data is None:
         st.stop()
 
-    # ---- 입력 영역 ----
+    # ---- 사이드바: 검색 조건 ----
     with st.sidebar:
         st.header("🔧 조건 선택")
 
@@ -126,7 +155,6 @@ def main():
             options=["월요일", "화요일", "수요일", "목요일", "금요일"],
         )
 
-        # 기존 코드에 맞춰 반 목록 고정
         selected_class = st.selectbox(
             "반을 선택하세요.",
             options=["1학년1반", "1학년2반", "1학년3반", "1학년4반"],
@@ -134,11 +162,14 @@ def main():
 
         search_button = st.button("🔍 교체 가능 시간 찾기")
 
-    # ---- 메인 영역 ----
-    st.subheader("🗓 선택한 조건")
-    st.write(f"- 선생님: **{teacher_name}**")
-    st.write(f"- 요일: **{selected_date}**")
-    st.write(f"- 반: **{selected_class}**")
+    # ---- 상단 정보 카드 ----
+    col_info1, col_info2, col_info3 = st.columns(3)
+    with col_info1:
+        st.metric("선택한 선생님", teacher_name)
+    with col_info2:
+        st.metric("요일", selected_date)
+    with col_info3:
+        st.metric("반", selected_class)
 
     st.markdown("---")
 
@@ -151,25 +182,85 @@ def main():
         )
 
         if not results:
-            st.warning("교체 가능한 시간이 없습니다.")
-        else:
-            st.success(f"총 **{len(results)}개**의 교체 가능 시간이 있습니다.")
-            # 표로 보기 좋게 정리
-            df_result = (
-                # (요일, 선생님, 교시) 튜플 리스트 → DataFrame
-                # 예: [("월요일", "홍길동", 3), ...]
-                # 컬럼명: 요일, 상대 선생님, 교시
-                # 정렬까지
-                __import__("pandas")
-                .DataFrame(results, columns=["요일", "상대 선생님", "교시"])
-                .sort_values(["요일", "교시", "상대 선생님"])
-            )
-            st.dataframe(df_result, use_container_width=True)
+            st.warning("❌ 교체 가능한 시간이 없습니다.")
+            return
 
-            # 문장으로도 출력
-            st.markdown("### 📋 상세 목록")
-            for day, other_teacher, period in results:
-                st.write(f"- {day} {other_teacher} 선생님의 **{period}교시**와 교체 가능합니다.")
+        # 튜플 리스트 → DataFrame
+        df_result = pd.DataFrame(results, columns=["요일", "상대 선생님", "교시"])
+        df_result = df_result.sort_values(["요일", "교시", "상대 선생님"]).reset_index(drop=True)
+
+        total_cnt = len(df_result)
+
+        # 요약 카드
+        st.subheader("✅ 검색 결과 요약")
+        col_sum1, col_sum2 = st.columns(2)
+        with col_sum1:
+            st.metric("총 교체 가능 시간 수", total_cnt)
+        with col_sum2:
+            st.metric("참여 가능 선생님 수", df_result["상대 선생님"].nunique())
+
+        st.markdown("---")
+
+        # 🔹 탭으로 결과 보기 나누기
+        tab1, tab2, tab3 = st.tabs(["📋 표 형식 보기", "⏰ 교시별 요약", "👩‍🏫 선생님별 요약"])
+
+        # =======================
+        # 탭 1: 표 형식 보기
+        # =======================
+        with tab1:
+            st.markdown("#### 📋 상세 표")
+            st.caption("요일-교시-선생님 순으로 정렬된 전체 교체 가능 시간입니다.")
+            st.dataframe(
+                df_result,
+                use_container_width=True,
+                height=350,   # 표 높이 제한
+            )
+
+        # =======================
+        # 탭 2: 교시별 요약
+        # =======================
+        with tab2:
+            st.markdown("#### ⏰ 교시별 요약")
+            st.caption("각 교시에 교체 가능한 선생님 목록을 요약해서 보여줍니다.")
+
+            # 교시별 : 해당 교시에 가능한 선생님 리스트
+            grouped = (
+                df_result
+                .groupby("교시")["상대 선생님"]
+                .apply(lambda s: ", ".join(sorted(set(s))))
+                .reset_index()
+                .sort_values("교시")
+            )
+            grouped.rename(columns={"교시": "교시", "상대 선생님": "교체 가능한 선생님들"}, inplace=True)
+
+            st.table(grouped)
+
+        # =======================
+        # 탭 3: 선생님별 요약
+        # =======================
+        with tab3:
+            st.markdown("#### 👩‍🏫 선생님별 요약")
+            st.caption("각 선생님이 교체 가능한 요일/교시 목록을 한 줄로 요약합니다.")
+
+            df_teacher = (
+                df_result
+                .groupby("상대 선생님")
+                .apply(lambda g: ", ".join(
+                    f"{row['요일']} {row['교시']}교시" for _, row in g.sort_values(["요일", "교시"]).iterrows()
+                ))
+                .reset_index(name="가능한 시간")
+                .sort_values("상대 선생님")
+            )
+
+            st.dataframe(
+                df_teacher,
+                use_container_width=True,
+                height=350,
+            )
+
+            st.markdown("### 📌 텍스트로도 보기")
+            for _, row in df_teacher.iterrows():
+                st.write(f"- **{row['상대 선생님']}**: {row['가능한 시간']}")
 
 
 if __name__ == "__main__":
