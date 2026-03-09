@@ -3,47 +3,260 @@ import streamlit as st
 import pandas as pd
 
 # =====================================
-# 0. 간단 스타일(CSS) 적용
+# 0. 페이지 설정
+# =====================================
+st.set_page_config(
+    page_title="수업 교체 가능 시간표",
+    layout="wide",
+)
+
+# =====================================
+# 1. 커스텀 CSS
 # =====================================
 CUSTOM_CSS = """
 <style>
-/* 전체 글자 크기 조금 줄이기 */
-body, .stMarkdown, .stDataFrame, .stTable {
-    font-size: 14px;
+/* 전체 앱 배경 */
+.stApp {
+    background: linear-gradient(180deg, #f8fafc 0%, #eef4ff 100%);
 }
 
-/* 표 헤더 진하게 */
-.dataframe thead tr th {
+/* 메인 영역 폭/여백 */
+.block-container {
+    max-width: 1450px;
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+/* 제목/텍스트 */
+h1, h2, h3, h4 {
+    color: #0f172a;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+}
+
+p, label, .stCaption, .stMarkdown, .stText {
+    color: #475569;
+}
+
+/* 공통 카드 */
+.custom-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 22px;
+    padding: 20px 22px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    margin-bottom: 18px;
+}
+
+/* 상단 히어로 카드 */
+.hero-card {
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+    color: white;
+    border-radius: 26px;
+    padding: 28px 30px;
+    box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+    margin-bottom: 22px;
+}
+
+.hero-title {
+    font-size: 2rem;
+    font-weight: 900;
+    margin-bottom: 6px;
+    color: white;
+}
+
+.hero-desc {
+    font-size: 1rem;
+    color: rgba(255,255,255,0.82);
+    margin-bottom: 0;
+}
+
+/* 필터 카드 */
+.filter-card {
+    background: rgba(255,255,255,0.88);
+    backdrop-filter: blur(10px);
+    border: 1px solid #dbeafe;
+    border-radius: 24px;
+    padding: 20px 22px 14px 22px;
+    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
+    margin-bottom: 18px;
+}
+
+/* selectbox */
+div[data-baseweb="select"] > div {
+    min-height: 46px;
+    border-radius: 14px !important;
+    border: 1px solid #cbd5e1 !important;
+    background: white !important;
+}
+
+/* 버튼 */
+.stButton > button {
+    height: 46px;
+    border-radius: 14px;
+    border: none;
+    font-weight: 800;
+    font-size: 15px;
+    color: white;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.22);
+    transition: 0.2s ease;
+}
+
+.stButton > button:hover {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+    color: white;
+}
+
+/* metric 카드 */
+[data-testid="metric-container"] {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 18px 18px;
+    box-shadow: 0 10px 26px rgba(15, 23, 42, 0.05);
+}
+
+/* metric 내부 */
+[data-testid="metric-container"] label {
+    color: #64748b !important;
+    font-weight: 700 !important;
+}
+
+[data-testid="metric-container"] [data-testid="stMetricValue"] {
+    color: #0f172a !important;
+    font-weight: 900 !important;
+}
+
+/* 데이터프레임 카드 느낌 */
+[data-testid="stDataFrame"] {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 8px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+}
+
+/* 표 헤더 */
+thead tr th {
+    background-color: #eff6ff !important;
+    color: #0f172a !important;
+    font-weight: 800 !important;
+    text-align: center !important;
+}
+
+/* 표 셀 */
+tbody tr td {
+    text-align: center !important;
+    font-size: 14px !important;
+}
+
+/* 홀수 줄 배경 */
+tbody tr:nth-child(odd) {
+    background-color: #f8fafc !important;
+}
+
+/* 구분 텍스트 */
+.section-title {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #0f172a;
+    margin-bottom: 6px;
+}
+
+.section-caption {
+    font-size: 0.92rem;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+/* 조건 표시 카드 */
+.condition-bar {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 14px 16px;
+    margin-top: 6px;
+    margin-bottom: 16px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.04);
+    font-size: 15px;
+    color: #334155;
+}
+
+/* 배지 */
+.badge {
+    display: inline-block;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #dbeafe;
+    color: #1d4ed8;
+    font-size: 12px;
+    font-weight: 800;
+    margin-right: 8px;
+}
+
+/* 결과 카드 */
+.result-card {
+    background: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 16px;
+    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.05);
+    margin-bottom: 14px;
+    min-height: 130px;
+}
+
+.result-card-top {
+    font-size: 12px;
+    font-weight: 800;
+    color: #64748b;
+    margin-bottom: 10px;
+}
+
+.result-card-main {
+    font-size: 20px;
+    font-weight: 900;
+    color: #0f172a;
+    margin-bottom: 8px;
+}
+
+.result-card-sub {
+    font-size: 15px;
+    color: #334155;
     font-weight: 600;
 }
 
-/* 줄무늬 표 */
-.dataframe tbody tr:nth-child(odd) {
-    background-color: #f9fafb;
+/* 안내 카드 */
+.empty-state {
+    background: white;
+    border: 1px dashed #bfdbfe;
+    border-radius: 22px;
+    padding: 34px 26px;
+    text-align: center;
+    color: #475569;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.03);
 }
 
-/* 사이드바 글자 크기 */
-section[data-testid="stSidebar"] * {
-    font-size: 14px;
+/* expander */
+.streamlit-expanderHeader {
+    font-weight: 800;
+    color: #0f172a;
 }
 
-/* 표 모든 셀 가운데 정렬 */
-table td, table th {
-    text-align: center !important;
-}
-
-/* 데이터프레임의 내부 테이블도 강제 정렬 */
-[data-testid="stDataFrame"] div div table td {
-    text-align: center !important;
-}
-[data-testid="stDataFrame"] div div table th {
-    text-align: center !important;
+/* 모바일 대응 */
+@media (max-width: 900px) {
+    .hero-title {
+        font-size: 1.6rem;
+    }
 }
 </style>
 """
 
+st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
+
 # =====================================
-# 1. 데이터 불러오기
+# 2. 데이터 불러오기
 # =====================================
 @st.cache_data
 def load_timetable(csv_filename: str):
@@ -55,7 +268,6 @@ def load_timetable(csv_filename: str):
         st.error(f"{csv_filename} 파일을 찾을 수 없습니다.")
         return None, None
 
-    # 첫 열: 선생님 이름 (0번째는 헤더라서 1행부터)
     name_list = [row[0] for row in data[1:]]
     return data, name_list
 
@@ -67,18 +279,16 @@ def find_exchange_slots(
     selected_class: str,
 ):
     """
-    기존 Tkinter 코드 conclude() 로직을 그대로 옮긴 함수.
-    교체 가능한 (요일, 상대 선생님 이름, 교시) 리스트를 리턴.
+    기존 Tkinter conclude() 로직을 Streamlit용으로 옮긴 함수.
+    교체 가능한 (요일, 상대 선생님, 교시) 리스트를 리턴.
     """
     if data is None:
         return []
 
     date_list = ["월요일", "화요일", "수요일", "목요일", "금요일"]
-    # 전체 선생님 이름 컬럼
     column = [row[0] for row in data]
 
-    # --- 선택한 선생님의 행 index 찾기 ---
-    name_index = None    # <- None으로 초기화 해야 안전
+    name_index = None
     for i in range(len(column)):
         if teacher_name == column[i]:
             name_index = i
@@ -87,7 +297,6 @@ def find_exchange_slots(
     if name_index is None:
         return []
 
-    # --- 선택한 반이 들어 있는 열 index들 찾기 (최대 35교시) ---
     class_index_list = []
     for j in range(1, 36):
         if j < len(data[name_index]) and selected_class == data[name_index][j]:
@@ -95,11 +304,9 @@ def find_exchange_slots(
 
     results = []
 
-    # --- 각 수업 시간(class_index)에 대해 교체 가능한 상대 찾기 ---
     for class_idx in class_index_list:
         class_num = class_idx
 
-        # 열 번호에 따라 요일 계산
         if 1 <= class_num <= 7:
             date = date_list[0]
         elif 8 <= class_num <= 14:
@@ -111,173 +318,253 @@ def find_exchange_slots(
         else:
             date = date_list[4]
 
-        # 사용자가 선택한 요일과 다르면 패스
         if selected_date != date:
             continue
 
-        # 이 요일(k)에 대해서 다른 선생님들 탐색
-        for k in range(len(date_list)):  # 0~4: 월~금
+        for k in range(len(date_list)):
             day_name = date_list[k]
 
-            for i in range(1, len(column)):  # 1행부터: 실제 선생님
+            for i in range(1, len(column)):
                 other_teacher = column[i]
                 if other_teacher == teacher_name:
                     continue
 
-                # 이 선생님의 해당 요일(7교시 분량) 범위
                 for m in range(7 * k + 1, 7 * k + 8):
-                    if m >= len(data[i]) or class_idx >= len(data[i]) or class_idx >= len(data[name_index]):
+                    if (
+                        m >= len(data[i])
+                        or class_idx >= len(data[i])
+                        or class_idx >= len(data[name_index])
+                    ):
                         continue
 
-                    # 같은 반을 가르치고 있는 시간인지 확인
                     if data[i][m] == selected_class:
-                        # 서로 빈 시간인지 확인
                         if data[i][class_idx] == "" and data[name_index][m] == "":
-                            # 교시 계산 (1~7교시)
                             period = 7 if m % 7 == 0 else m % 7
                             results.append((day_name, other_teacher, period))
 
     return results
 
 
+def make_teacher_summary(df_result: pd.DataFrame) -> pd.DataFrame:
+    df_teacher = (
+        df_result.groupby("상대 선생님")
+        .apply(
+            lambda g: ", ".join(
+                f"{row['요일']} {row['교시']}교시"
+                for _, row in g.sort_values(["요일", "교시"]).iterrows()
+            )
+        )
+        .reset_index(name="가능한 시간")
+        .sort_values("상대 선생님")
+    )
+    return df_teacher
+
+
+def make_period_summary(df_result: pd.DataFrame) -> pd.DataFrame:
+    grouped = (
+        df_result.groupby("교시")["상대 선생님"]
+        .apply(lambda s: ", ".join(sorted(set(s))))
+        .reset_index()
+        .sort_values("교시")
+    )
+    grouped.rename(columns={"상대 선생님": "교체 가능한 선생님들"}, inplace=True)
+    return grouped
+
+
 # =====================================
-# 2. Streamlit UI
+# 3. 메인 UI
 # =====================================
 def main():
-    st.set_page_config(page_title="수업 교체 가능 시간표", layout="wide")
-    st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
-
-    st.title("📚 수업 교체 가능 시간 조회")
-    st.caption("CSV 시간표를 기반으로 교체 가능한 선생님과 교시를 찾아줍니다.")
-
     csv_filename = "기초시간표.csv"
-
     data, name_list = load_timetable(csv_filename)
 
     if data is None:
         st.stop()
 
-    # ---- 사이드바: 검색 조건 ----
-    with st.sidebar:
-        st.header("🔧 조건 선택")
+    # -----------------------------
+    # 상단 헤더
+    # -----------------------------
+    st.markdown(
+        """
+        <div class="hero-card">
+            <div class="hero-title">📚 수업 교체 가능 시간 조회</div>
+            <p class="hero-desc">
+                시간표를 기반으로 교체 가능한 선생님과 교시를 빠르게 찾을 수 있는 대시보드입니다.
+            </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-        teacher_name = st.selectbox("본인 이름을 선택하세요.", options=name_list)
+    # -----------------------------
+    # 상단 필터 카드
+    # -----------------------------
+    st.markdown('<div class="filter-card">', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-title">🔎 조회 조건 선택</div>'
+        '<div class="section-caption">사이드바 대신 상단에서 바로 조건을 고르고 결과를 한 화면에서 확인하세요.</div>',
+        unsafe_allow_html=True,
+    )
 
+    col1, col2, col3, col4 = st.columns([2.2, 1.3, 1.5, 1.0])
+
+    with col1:
+        teacher_name = st.selectbox(
+            "선생님",
+            options=name_list,
+            key="teacher_name",
+        )
+
+    with col2:
         selected_date = st.selectbox(
-            "요일을 선택하세요.",
+            "요일",
             options=["월요일", "화요일", "수요일", "목요일", "금요일"],
+            key="selected_date",
         )
 
+    with col3:
         selected_class = st.selectbox(
-            "반을 선택하세요.",
-            options=["1학년1반", "1학년2반", "1학년3반", "1학년4반", "2학년1반", "2학년2반", "2학년3반", "2학년4반"],
+            "반",
+            options=[
+                "1학년1반", "1학년2반", "1학년3반", "1학년4반",
+                "2학년1반", "2학년2반", "2학년3반", "2학년4반"
+            ],
+            key="selected_class",
         )
 
-        search_button = st.button("🔍 교체 가능 시간 찾기")
+    with col4:
+        st.write("")
+        st.write("")
+        search_button = st.button("조회하기", use_container_width=True)
 
-    # ---- 상단 정보 카드 ----
-    col_info1, col_info2, col_info3 = st.columns(3)
-    with col_info1:
-        st.metric("선택한 선생님", teacher_name)
-    with col_info2:
-        st.metric("요일", selected_date)
-    with col_info3:
-        st.metric("반", selected_class)
+    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("---")
+    # -----------------------------
+    # 검색 전 안내
+    # -----------------------------
+    if not search_button:
+        st.markdown(
+            """
+            <div class="empty-state">
+                <h3 style="margin-bottom:8px;">먼저 조회 조건을 선택해 주세요</h3>
+                <p style="margin-bottom:0;">
+                    상단에서 <b>선생님</b>, <b>요일</b>, <b>반</b>을 선택한 뒤
+                    <b>조회하기</b> 버튼을 누르면 교체 가능한 시간이 대시보드 형태로 표시됩니다.
+                </p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        return
 
-    if search_button:
-        results = find_exchange_slots(
-            data=data,
-            teacher_name=teacher_name,
-            selected_date=selected_date,
-            selected_class=selected_class,
+    # -----------------------------
+    # 검색 실행
+    # -----------------------------
+    results = find_exchange_slots(
+        data=data,
+        teacher_name=teacher_name,
+        selected_date=selected_date,
+        selected_class=selected_class,
+    )
+
+    st.markdown(
+        f"""
+        <div class="condition-bar">
+            <span class="badge">조회 조건</span>
+            <b>{teacher_name}</b> · {selected_date} · {selected_class}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if not results:
+        st.warning("❌ 교체 가능한 시간이 없습니다.")
+        return
+
+    df_result = pd.DataFrame(results, columns=["요일", "상대 선생님", "교시"])
+    weekday_order = ["월요일", "화요일", "수요일", "목요일", "금요일"]
+
+    df_result["요일"] = pd.Categorical(
+        df_result["요일"],
+        categories=weekday_order,
+        ordered=True
+    )
+
+    df_result = df_result.sort_values(["요일", "교시", "상대 선생님"]).reset_index(drop=True)
+
+    df_period = make_period_summary(df_result)
+    df_teacher = make_teacher_summary(df_result)
+
+    total_cnt = len(df_result)
+    teacher_cnt = df_result["상대 선생님"].nunique()
+    period_cnt = df_result["교시"].nunique()
+
+    # -----------------------------
+    # 상단 요약 카드
+    # -----------------------------
+    m1, m2, m3 = st.columns(3)
+    with m1:
+        st.metric("총 교체 가능 시간", total_cnt)
+    with m2:
+        st.metric("참여 가능 선생님 수", teacher_cnt)
+    with m3:
+        st.metric("가능한 교시 종류", period_cnt)
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # -----------------------------
+    # 2단 대시보드 레이아웃
+    # -----------------------------
+    left, right = st.columns([1.7, 1.15], gap="large")
+
+    with left:
+        st.markdown(
+            '<div class="section-title">📋 상세 결과</div>'
+            '<div class="section-caption">요일 → 교시 → 선생님 순으로 정렬된 전체 결과입니다.</div>',
+            unsafe_allow_html=True,
+        )
+        st.dataframe(df_result, use_container_width=True, hide_index=True)
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        st.markdown(
+            '<div class="section-title">🪄 카드형 빠른 보기</div>'
+            '<div class="section-caption">한눈에 보기 쉽게 카드 형태로도 제공합니다.</div>',
+            unsafe_allow_html=True,
         )
 
-        if not results:
-            st.warning("❌ 교체 가능한 시간이 없습니다.")
-            return
+        card_cols = st.columns(3)
+        for idx, row in df_result.iterrows():
+            with card_cols[idx % 3]:
+                st.markdown(
+                    f"""
+                    <div class="result-card">
+                        <div class="result-card-top">교체 가능 슬롯</div>
+                        <div class="result-card-main">{row['요일']} · {row['교시']}교시</div>
+                        <div class="result-card-sub">👩‍🏫 {row['상대 선생님']}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
-        # 튜플 리스트 → DataFrame
-        df_result = pd.DataFrame(results, columns=["요일", "상대 선생님", "교시"])
-        weekday_order = ["월요일", "화요일", "수요일", "목요일", "금요일"]
-
-        df_result["요일"] = pd.Categorical(
-            df_result["요일"],
-            categories=weekday_order,
-            ordered=True
+    with right:
+        st.markdown(
+            '<div class="section-title">⏰ 교시별 요약</div>'
+            '<div class="section-caption">각 교시에 누가 가능한지 빠르게 확인할 수 있습니다.</div>',
+            unsafe_allow_html=True,
         )
+        st.dataframe(df_period, use_container_width=True, hide_index=True)
 
-        # 요일 → 교시 → 상대 선생님 순으로 다시 정렬
-        df_result = df_result.sort_values(["요일", "교시", "상대 선생님"]).reset_index(drop=True)
+        st.markdown("<br>", unsafe_allow_html=True)
 
+        st.markdown(
+            '<div class="section-title">👩‍🏫 선생님별 요약</div>'
+            '<div class="section-caption">각 선생님이 가능한 시간을 묶어서 보여줍니다.</div>',
+            unsafe_allow_html=True,
+        )
+        st.dataframe(df_teacher, use_container_width=True, hide_index=True)
 
-        total_cnt = len(df_result)
-
-        # 요약 카드
-        st.subheader("✅ 검색 결과 요약")
-        col_sum1, col_sum2 = st.columns(2)
-        with col_sum1:
-            st.metric("총 교체 가능 시간 수", total_cnt)
-        with col_sum2:
-            st.metric("참여 가능 선생님 수", df_result["상대 선생님"].nunique())
-
-        st.markdown("---")
-
-        # 🔹 탭으로 결과 보기 나누기
-        tab1, tab2, tab3 = st.tabs(["📋 표 형식 보기", "⏰ 교시별 요약", "👩‍🏫 선생님별 요약"])
-
-        # =======================
-        # 탭 1: 표 형식 보기
-        # =======================
-        with tab1:
-            st.markdown("#### 📋 상세 표")
-            st.caption("요일-교시-선생님 순으로 정렬된 전체 교체 가능 시간입니다.")
-            st.table(
-                df_result
-            )
-
-        # =======================
-        # 탭 2: 교시별 요약
-        # =======================
-        with tab2:
-            st.markdown("#### ⏰ 교시별 요약")
-            st.caption("각 교시에 교체 가능한 선생님 목록을 요약해서 보여줍니다.")
-
-            # 교시별 : 해당 교시에 가능한 선생님 리스트
-            grouped = (
-                df_result
-                .groupby("교시")["상대 선생님"]
-                .apply(lambda s: ", ".join(sorted(set(s))))
-                .reset_index()
-                .sort_values("교시")
-            )
-            grouped.rename(columns={"교시": "교시", "상대 선생님": "교체 가능한 선생님들"}, inplace=True)
-
-            st.table(grouped)
-
-        # =======================
-        # 탭 3: 선생님별 요약
-        # =======================
-        with tab3:
-            st.markdown("#### 👩‍🏫 선생님별 요약")
-            st.caption("각 선생님이 교체 가능한 요일/교시 목록을 한 줄로 요약합니다.")
-
-            df_teacher = (
-                df_result
-                .groupby("상대 선생님")
-                .apply(lambda g: ", ".join(
-                    f"{row['요일']} {row['교시']}교시" for _, row in g.sort_values(["요일", "교시"]).iterrows()
-                ))
-                .reset_index(name="가능한 시간")
-                .sort_values("상대 선생님")
-            )
-
-            st.table(
-                df_teacher
-            )
-
-            st.markdown("### 📌 텍스트로도 보기")
+        with st.expander("텍스트로 간단히 보기"):
             for _, row in df_teacher.iterrows():
                 st.write(f"- **{row['상대 선생님']}**: {row['가능한 시간']}")
 
